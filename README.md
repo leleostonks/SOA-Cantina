@@ -81,6 +81,26 @@ curl localhost:8081/itens
 
 No PowerShell, a variável vai antes: `$env:PORTA=8081; python app.py`.
 
+### Pedidos (Node.js 18+)
+
+```bash
+cd servicos/pedidos
+npm install
+PORTA=8082 CARDAPIO_URL=http://localhost:8081 node server.js &
+curl -X POST localhost:8082/pedidos -H "Content-Type: application/json" \
+  -d '{"alunoId":"RM550413","itens":[{"itemId":1,"quantidade":2},{"itemId":2,"quantidade":1}]}'
+```
+
+Os pedidos ficam em `servicos/pedidos/dados/pedidos.json`, que pertence só ao Pedidos e não vai para o Git.
+
+## Prova de fogo (Missão 3)
+
+| Grupo | Linguagem do Cardápio deles | `CARDAPIO_URL` | Resultado |
+|---|---|---|---|
+| _a fazer na aula de 19/10_ | | | |
+
+Antes da aula, o grupo trocou o `CARDAPIO_URL` para a segunda instância (8091), sem alterar o código, e o pedido saiu igual (teste 8 de `evidencias/missao3.txt`).
+
 ## Matriz de princípios
 
 _A preencher na Entrega 5._
