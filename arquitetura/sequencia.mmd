@@ -1,0 +1,32 @@
+%% Visão de sequência: um pedido, do caminho feliz às falhas.
+sequenceDiagram
+    autonumber
+    actor Aluno
+    participant P as Pedidos
+    participant C as Cardápio
+    participant A as Avisos
+
+    Aluno->>P: POST /pedidos {alunoId, itens}
+    P->>C: GET /itens/{id} (para cada item, tempo limite 1,5 s)
+
+    alt Cardápio fora do ar ou travado
+        C--xP: sem resposta
+        P-->>Aluno: 503 CARDAPIO_INDISPONIVEL + Retry-After (em até 2 s)
+    else item inexistente ou indisponível
+        C-->>P: 404 ou disponivel=false
+        P-->>Aluno: 422, nenhum pedido criado
+    else todos os itens disponíveis
+        C-->>P: 200 {nome, precoCentavos, disponivel}
+        P->>P: calcula o total e grava em pedidos.json
+        P-->>Aluno: 201 pedido confirmado
+        P-)A: POST /eventos cantina.pedido.confirmado (não espera)
+        alt Avisos no ar
+            A-->>P: 202
+            A->>A: avisa o aluno
+        else Avisos fora do ar
+            P->>P: guarda em eventos-pendentes.json
+            loop a cada 5 s, até chegar
+                P-)A: reenvia o mesmo evento (mesmo id)
+            end
+        end
+    end

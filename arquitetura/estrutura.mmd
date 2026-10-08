@@ -1,0 +1,32 @@
+%% Visão de estrutura: quem existe, o que cada um guarda e por onde conversam.
+%% Linha cheia: chamada HTTP síncrona. Linha tracejada: evento assíncrono.
+flowchart TB
+    aluno(["Aluno (celular)"])
+
+    subgraph pedidos["Pedidos · Node.js/Express · porta 8082"]
+        direction LR
+        p["POST /pedidos<br/>GET /pedidos/{id}"]
+        pdados[("pedidos.json")]
+        pend[("eventos-pendentes.json")]
+        p --- pdados
+        p --- pend
+    end
+
+    subgraph cardapio["Cardápio · Python/FastAPI"]
+        direction LR
+        c1["instância 8081"]
+        c2["instância 8091"]
+        cdados[("dados.json")]
+        c1 --- cdados
+        c2 --- cdados
+    end
+
+    subgraph avisos["Avisos · Go"]
+        direction LR
+        a1["avisos-1 · 8083"]
+        a2["avisos-2 · 8093"]
+    end
+
+    aluno -- "pedidos.yaml" --> pedidos
+    pedidos -- "cardapio.yaml<br/>CARDAPIO_URL · tempo limite 1,5 s" --> cardapio
+    pedidos -. "pedido-confirmado.json (CloudEvents)<br/>ASSINANTES" .-> avisos
