@@ -1,0 +1,7 @@
+[
+  { "id": 1, "nome": "Coxinha", "precoCentavos": 1000, "disponivel": true },
+  { "id": 2, "nome": "Suco de laranja", "precoCentavos": 500, "disponivel": true },
+  { "id": 3, "nome": "Pão de queijo", "precoCentavos": 600, "disponivel": false },
+  { "id": 4, "nome": "Café", "precoCentavos": 400, "disponivel": true },
+  { "id": 5, "nome": "Misto quente", "precoCentavos": 1200, "disponivel": true }
+]

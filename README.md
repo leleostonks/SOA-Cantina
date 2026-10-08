@@ -67,7 +67,19 @@ Preços sempre em centavos (inteiros). Se o código e o contrato discordarem, o 
 
 ## Como rodar
 
-_A preencher a partir da Entrega 2._
+### Cardápio (Python 3.10+)
+
+```bash
+cd servicos/cardapio
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+PORTA=8081 python app.py &         # instância 1
+PORTA=8091 python app.py &         # instância 2
+curl localhost:8081/itens
+```
+
+No PowerShell, a variável vai antes: `$env:PORTA=8081; python app.py`.
 
 ## Matriz de princípios
 

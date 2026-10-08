@@ -1,0 +1,35 @@
+Missão 2 · Serviço autônomo: Cardápio (Python/FastAPI) em duas instâncias
+Gerado em 2026-10-08 09:21 · instâncias: PORTA=8081 e PORTA=8091
+==================================================================
+
+$ curl -s -w "\nHTTP %{http_code}" localhost:8081/saude
+{"status":"ok"}
+HTTP 200
+
+$ curl -s -w "\nHTTP %{http_code}" localhost:8081/itens
+[{"id":1,"nome":"Coxinha","precoCentavos":1000,"disponivel":true},{"id":2,"nome":"Suco de laranja","precoCentavos":500,"disponivel":true},{"id":3,"nome":"Pão de queijo","precoCentavos":600,"disponivel":false},{"id":4,"nome":"Café","precoCentavos":400,"disponivel":true},{"id":5,"nome":"Misto quente","precoCentavos":1200,"disponivel":true}]
+HTTP 200
+
+$ curl -s -w "\nHTTP %{http_code}" localhost:8091/itens
+[{"id":1,"nome":"Coxinha","precoCentavos":1000,"disponivel":true},{"id":2,"nome":"Suco de laranja","precoCentavos":500,"disponivel":true},{"id":3,"nome":"Pão de queijo","precoCentavos":600,"disponivel":false},{"id":4,"nome":"Café","precoCentavos":400,"disponivel":true},{"id":5,"nome":"Misto quente","precoCentavos":1200,"disponivel":true}]
+HTTP 200
+
+$ curl -s -w "\nHTTP %{http_code}" localhost:8091/itens/1
+{"id":1,"nome":"Coxinha","precoCentavos":1000,"disponivel":true}
+HTTP 200
+
+$ curl -s -w "\nHTTP %{http_code}" localhost:8081/itens/99
+{"codigo":"ITEM_NAO_ENCONTRADO","mensagem":"Item 99 não existe no cardápio."}
+HTTP 404
+
+--- As duas instâncias devolvem a mesma resposta?
+$ diff <(curl -s localhost:8081/itens) <(curl -s localhost:8091/itens) && echo "iguais"
+iguais
+
+
+--- Simulação: derrubar a instância 8081 e chamar a 8091
+$ curl -s -o /dev/null -w "8081 -> HTTP %{http_code}\n" localhost:8081/itens; curl -s -w "\n8091 -> HTTP %{http_code}" localhost:8091/itens/2
+8081 -> HTTP 000
+{"id":2,"nome":"Suco de laranja","precoCentavos":500,"disponivel":true}
+8091 -> HTTP 200
+
