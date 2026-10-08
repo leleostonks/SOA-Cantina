@@ -93,6 +93,33 @@ curl -X POST localhost:8082/pedidos -H "Content-Type: application/json" \
 
 Os pedidos ficam em `servicos/pedidos/dados/pedidos.json`, que pertence só ao Pedidos e não vai para o Git.
 
+Para publicar o evento de pedido confirmado, acrescente `ASSINANTES` com os endereços separados por vírgula:
+
+```bash
+PORTA=8082 CARDAPIO_URL=http://localhost:8081 \
+ASSINANTES=http://localhost:8083/eventos node server.js &
+```
+
+### Avisos (Go 1.22+)
+
+```bash
+cd servicos/avisos
+PORTA=8083 NOME=avisos-1 go run . &
+curl localhost:8083/avisos          # avisos já enviados
+```
+
+Um segundo consumidor é só mais uma instância (`PORTA=8093 NOME=avisos-2 go run .`) e mais um endereço em `ASSINANTES`.
+
+## Canal de eventos: Trilha A
+
+O grupo escolheu a **Trilha A**: o Pedidos faz `POST` do evento, no envelope CloudEvents, em cada endereço de `ASSINANTES`.
+
+**Por quê:** não pede nenhum servidor a mais, roda igual no Codespaces e no Windows, e o contrato do evento é o mesmo que seria publicado num broker. Passar para a Trilha B muda só o canal, não a mensagem.
+
+**Como o pedido sobrevive à queda do Avisos:** o Pedidos responde `201` sem esperar o consumidor. Se a entrega falha, o evento fica em `dados/eventos-pendentes.json` e é reenviado a cada 5 segundos até chegar. O Avisos ignora eventos repetidos pelo `id`.
+
+**O que a Trilha A não resolve:** o Pedidos ainda guarda a lista de assinantes (na configuração, não no código). Num broker, o consumidor assina sozinho e o Pedidos nem fica sabendo.
+
 ## Prova de fogo (Missão 3)
 
 | Grupo | Linguagem do Cardápio deles | `CARDAPIO_URL` | Resultado |
