@@ -1,0 +1,216 @@
+openapi: 3.0.3
+info:
+  title: Pedidos da Cantina
+  version: 1.0.0
+  description: |
+    Registra a compra do aluno. Para cada item, consulta o Cardápio
+    (contrato em cardapio.yaml), usando o endereço da variável CARDAPIO_URL,
+    para validar o item e calcular o total. Preços em centavos (inteiros).
+
+    O pedido aceito já nasce confirmado e gera o evento
+    cantina.pedido.confirmado (contrato em pedido-confirmado.json).
+    Se ninguém receber o evento, o pedido continua valendo.
+servers:
+  - url: http://localhost:8082
+security: []  # laboratório: sem autenticação
+tags:
+  - name: pedidos
+  - name: operacao
+paths:
+  /pedidos:
+    post:
+      tags: [pedidos]
+      operationId: criarPedido
+      summary: Cria e confirma um pedido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NovoPedido"
+            example:
+              alunoId: RM98765
+              itens:
+                - { itemId: 1, quantidade: 2 }
+                - { itemId: 2, quantidade: 1 }
+      responses:
+        "201":
+          description: Pedido criado e confirmado.
+          headers:
+            Location:
+              description: Endereço do pedido criado.
+              schema:
+                type: string
+              example: /pedidos/7
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pedido"
+              example:
+                id: 7
+                alunoId: RM98765
+                status: confirmado
+                itens:
+                  - { itemId: 1, nome: Coxinha, quantidade: 2, precoUnitarioCentavos: 1000, subtotalCentavos: 2000 }
+                  - { itemId: 2, nome: Suco de laranja, quantidade: 1, precoUnitarioCentavos: 500, subtotalCentavos: 500 }
+                totalCentavos: 2500
+                criadoEm: "2026-10-19T10:15:00Z"
+        "400":
+          description: Corpo mal formado (JSON inválido, campo obrigatório faltando, quantidade menor que 1).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+              example: { codigo: REQUISICAO_INVALIDA, mensagem: "O campo itens é obrigatório e não pode ser vazio." }
+        "422":
+          description: |
+            Corpo bem formado, mas um item não existe no Cardápio ou está indisponível.
+            Nenhum pedido é criado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+              examples:
+                indisponivel:
+                  value: { codigo: ITEM_INDISPONIVEL, mensagem: "O item 3 (Pão de queijo) está indisponível.", itemId: 3 }
+                inexistente:
+                  value: { codigo: ITEM_NAO_ENCONTRADO, mensagem: "O item 99 não existe no cardápio.", itemId: 99 }
+        "503":
+          description: |
+            O Cardápio não respondeu. Toda chamada ao Cardápio tem tempo limite,
+            e esta resposta chega em no máximo 2 segundos. Nenhum pedido é criado.
+          headers:
+            Retry-After:
+              description: Segundos sugeridos antes de tentar de novo.
+              schema:
+                type: integer
+              example: 5
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+              example: { codigo: CARDAPIO_INDISPONIVEL, mensagem: "O Cardápio não respondeu. Tente de novo em instantes." }
+  /pedidos/{id}:
+    get:
+      tags: [pedidos]
+      operationId: buscarPedido
+      summary: Busca um pedido pelo id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 7
+      responses:
+        "200":
+          description: Pedido encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pedido"
+        "404":
+          description: Não existe pedido com esse id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+              example: { codigo: PEDIDO_NAO_ENCONTRADO, mensagem: "Pedido 99 não existe." }
+  /saude:
+    get:
+      tags: [operacao]
+      operationId: saude
+      summary: Verifica se o serviço está no ar
+      responses:
+        "200":
+          description: Serviço no ar.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+              example: { status: ok }
+components:
+  schemas:
+    NovoPedido:
+      type: object
+      required: [alunoId, itens]
+      properties:
+        alunoId:
+          type: string
+          minLength: 1
+          description: Identificação do aluno (por exemplo, o RM). Usada pelo Avisos para saber quem avisar.
+        itens:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ItemSolicitado"
+    ItemSolicitado:
+      type: object
+      required: [itemId, quantidade]
+      properties:
+        itemId:
+          type: integer
+          minimum: 1
+          description: id do item no Cardápio.
+        quantidade:
+          type: integer
+          minimum: 1
+    Pedido:
+      type: object
+      required: [id, alunoId, status, itens, totalCentavos, criadoEm]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        alunoId:
+          type: string
+        status:
+          type: string
+          enum: [confirmado]
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemDoPedido"
+        totalCentavos:
+          type: integer
+          minimum: 0
+          description: Soma dos subtotais, com os preços do Cardápio no momento do pedido.
+        criadoEm:
+          type: string
+          format: date-time
+    ItemDoPedido:
+      type: object
+      required: [itemId, nome, quantidade, precoUnitarioCentavos, subtotalCentavos]
+      properties:
+        itemId:
+          type: integer
+        nome:
+          type: string
+        quantidade:
+          type: integer
+          minimum: 1
+        precoUnitarioCentavos:
+          type: integer
+          minimum: 0
+          description: Preço copiado do Cardápio no momento do pedido.
+        subtotalCentavos:
+          type: integer
+          minimum: 0
+    Erro:
+      type: object
+      required: [codigo, mensagem]
+      properties:
+        codigo:
+          type: string
+          enum: [REQUISICAO_INVALIDA, ITEM_NAO_ENCONTRADO, ITEM_INDISPONIVEL, CARDAPIO_INDISPONIVEL, PEDIDO_NAO_ENCONTRADO]
+        mensagem:
+          type: string
+        itemId:
+          type: integer
+          description: Presente nos erros 422, indica o item que causou a recusa.

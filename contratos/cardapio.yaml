@@ -1,0 +1,112 @@
+openapi: 3.0.3
+info:
+  title: Cardápio da Cantina
+  version: 1.0.0
+  description: |
+    Informa o que a cantina tem para vender e por quanto.
+    Preços em centavos (inteiros), para evitar erro de arredondamento.
+    O serviço não guarda estado entre chamadas: qualquer instância responde igual.
+servers:
+  - url: http://localhost:8081
+    description: Instância 1
+  - url: http://localhost:8091
+    description: Instância 2
+security: []  # laboratório: sem autenticação
+tags:
+  - name: itens
+  - name: operacao
+paths:
+  /itens:
+    get:
+      tags: [itens]
+      operationId: listarItens
+      summary: Lista todos os itens do cardápio
+      responses:
+        "200":
+          description: Itens do cardápio, disponíveis ou não.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+              example:
+                - { id: 1, nome: Coxinha, precoCentavos: 1000, disponivel: true }
+                - { id: 2, nome: Suco de laranja, precoCentavos: 500, disponivel: true }
+                - { id: 3, nome: Pão de queijo, precoCentavos: 600, disponivel: false }
+  /itens/{id}:
+    get:
+      tags: [itens]
+      operationId: buscarItem
+      summary: Busca um item pelo id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        "200":
+          description: Item encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+              example: { id: 1, nome: Coxinha, precoCentavos: 1000, disponivel: true }
+        "404":
+          description: Não existe item com esse id (por exemplo, o 99).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+              example: { codigo: ITEM_NAO_ENCONTRADO, mensagem: "Item 99 não existe no cardápio." }
+  /saude:
+    get:
+      tags: [operacao]
+      operationId: saude
+      summary: Verifica se a instância está no ar
+      responses:
+        "200":
+          description: Instância no ar.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Saude"
+              example: { status: ok }
+components:
+  schemas:
+    Item:
+      type: object
+      required: [id, nome, precoCentavos, disponivel]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        nome:
+          type: string
+        precoCentavos:
+          type: integer
+          minimum: 0
+          description: Preço unitário em centavos. 1000 = R$ 10,00.
+        disponivel:
+          type: boolean
+          description: Falso quando o item acabou. Pedidos não aceita item indisponível.
+    Erro:
+      type: object
+      required: [codigo, mensagem]
+      properties:
+        codigo:
+          type: string
+          description: Código estável, para máquina.
+        mensagem:
+          type: string
+          description: Texto para gente.
+    Saude:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]

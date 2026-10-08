@@ -45,6 +45,16 @@ Cada serviço usa uma linguagem diferente. Quem garante que eles se entendam é 
 └── README.md        como rodar + matriz de princípios
 ```
 
+## Contratos
+
+| Arquivo | Serviço | Formato |
+|---|---|---|
+| [`contratos/cardapio.yaml`](contratos/cardapio.yaml) | Cardápio (portas 8081 e 8091) | OpenAPI 3.0 |
+| [`contratos/pedidos.yaml`](contratos/pedidos.yaml) | Pedidos (porta 8082) | OpenAPI 3.0 |
+| [`contratos/pedido-confirmado.json`](contratos/pedido-confirmado.json) | Evento `cantina.pedido.confirmado` | JSON Schema do envelope CloudEvents 1.0 |
+
+Preços sempre em centavos (inteiros). Se o código e o contrato discordarem, o código está errado.
+
 ## Entregas
 
 | Tag | Prazo | Entrega |
